@@ -1,3 +1,4 @@
+from re import T
 import streamlit as st
 import pandas as pd
 import json
@@ -175,17 +176,28 @@ def parameter_selection_screen():
             filter_value = st.text_input(f"Filter by {param}")
             if filter_value:
                 filters[param] = filter_value
+
         max_date = date.today()
         start_date = st.date_input("Start Date", value=max_date, max_value=max_date)
         end_date = st.date_input("End Date", value=max_date, min_value=start_date, max_value=max_date)
+
         st.session_state['filters'] = filters
         st.session_state['start_date'] = start_date
         st.session_state['end_date'] = end_date
+
         st.write(f"Selected parameters: {selected_params}")
         st.write(f"Filter values: {filters}")
-        filtered_data = filter_json_data(json_data, filters, start_date, end_date)
-        st.session_state['filtered_data'] = filtered_data
-        st.success("Filters applied successfully! You can view the filtered data in the Parameters Results page.")
+
+        if selected_params or (start_date and end_date):
+            filtered_data = filter_json_data(json_data, filters, start_date, end_date)
+            st.session_state['filtered_data'] = filtered_data
+            if filtered_data:
+                st.success(
+                    "Filters applied successfully! You can view the filtered data in the Parameters Results page.")
+            else:
+                st.warning("No data matches the selected filters.")
+        else:
+            st.warning("No filters applied. Please select parameters or specify a date range.")
     else:
         st.warning("No JSON data available. Please upload a JSON file on the Admin page.")
 
