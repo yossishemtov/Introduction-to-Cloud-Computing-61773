@@ -55,7 +55,6 @@ else:
     unique_documents = len(documents)
     unique_tabs = len(tabs)
 
-
     # Categorize activities
     def categorize_activity(description):
         creative_keywords = ['create', 'modify', 'delete', 'assign material', 'insert', 'comment', 'rename']
@@ -71,28 +70,21 @@ else:
         else:
             return 'Other'
 
-
     activities = Counter([categorize_activity(item.get('Description', '')) for item in data])
 
 # Define patterns and responses
 patterns = [
     (r'hi|hello|hey', ['Hello!', 'Hi there!', 'Welcome to the project management assistant.']),
-    (r'how are you?',
-     ['I\'m functioning well, thank you!', 'I\'m operational and ready to assist with your project management.']),
+    (r'how are you?', ['I\'m functioning well, thank you!', 'I\'m operational and ready to assist with your project management.']),
     (r'what is your name?', ['I\'m the Project Management Assistant.', 'You can call me the Assistant.']),
-    (r'what are the main activities of the student?', [
-        f"The main activities are: {activities['Creative']} creative actions, {activities['Viewing']} viewing actions, and {activities['Administrative']} administrative actions."
-    ]),
+    (r'what are the main activities of the student?', [f"The main activities are: {activities['Creative']} creative actions, {activities['Viewing']} viewing actions, and {activities['Administrative']} administrative actions."]),
     (r'are they creative?', [f"Yes, the student has performed {activities['Creative']} creative actions."]),
     (r'are they viewing?', [f"Yes, the student has performed {activities['Viewing']} viewing actions."]),
-    (r'are they administrative?',
-     [f"Yes, the student has performed {activities['Administrative']} administrative actions."]),
+    (r'are they administrative?', [f"Yes, the student has performed {activities['Administrative']} administrative actions."]),
     (r'how many creative actions?', [f"The student has performed {activities['Creative']} creative actions."]),
     (r'how many viewing actions?', [f"The student has performed {activities['Viewing']} viewing actions."]),
-    (r'how many administrative actions?',
-     [f"The student has performed {activities['Administrative']} administrative actions."]),
-    (r'exit|bye|goodbye', ['Thank you for using the Project Management Assistant. Goodbye!',
-                           'Farewell! Don\'t hesitate to return if you need more assistance with your project.']),
+    (r'how many administrative actions?', [f"The student has performed {activities['Administrative']} administrative actions."]),
+    (r'exit|bye|goodbye', ['Thank you for using the Project Management Assistant. Goodbye!', 'Farewell! Don\'t hesitate to return if you need more assistance with your project.']),
     (r'what documents were accessed?', [f"The documents accessed were: {', '.join(documents.keys())}"]),
     (r'what tabs were used?', [f"The tabs used were: {', '.join(tabs.keys())}"]),
     (r'how many times was the document opened?', [f"The document was opened {descriptions['Open document']} times."]),
@@ -108,12 +100,10 @@ chatbot = Chat(patterns, reflections)
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-
 # Function to display chat history
 def display_chat_history():
     for message in st.session_state['chat_history']:
         st.write(message)
-
 
 # Helper functions to load and display JSON
 def load_json(file):
@@ -124,10 +114,8 @@ def load_json(file):
         st.error(f"Error loading JSON: {e}")
         return None
 
-
 def display_json(data):
     st.json(data)
-
 
 def filter_json_data(json_data, filters, start_date=None, end_date=None):
     filtered_data = []
@@ -151,7 +139,6 @@ def filter_json_data(json_data, filters, start_date=None, end_date=None):
             filtered_data.append(item)
     return filtered_data
 
-
 # Admin Screen to upload JSON file
 def admin_screen():
     st.title("Admin Screen")
@@ -161,7 +148,6 @@ def admin_screen():
         if json_data is not None:
             st.session_state['json_data'] = json_data
             st.success("File uploaded successfully!")
-
 
 # Parameter Selection Screen to select parameters and apply filters
 def parameter_selection_screen():
@@ -192,15 +178,13 @@ def parameter_selection_screen():
             filtered_data = filter_json_data(json_data, filters, start_date, end_date)
             st.session_state['filtered_data'] = filtered_data
             if filtered_data:
-                st.success(
-                    "Filters applied successfully! You can view the filtered data in the Parameters Results page.")
+                st.success("Filters applied successfully! You can view the filtered data in the Parameters Results page.")
             else:
                 st.warning("No data matches the selected filters.")
         else:
             st.warning("No filters applied. Please select parameters or specify a date range.")
     else:
         st.warning("No JSON data available. Please upload a JSON file on the Admin page.")
-
 
 # Parameters Results Screen to display filtered data
 def parameters_results_screen():
@@ -218,7 +202,6 @@ def parameters_results_screen():
     else:
         st.warning("No filtered data available. Please apply filters on the Parameter Selection screen.")
 
-
 # Interesting Statistics Screen to display various statistics
 def interesting_statistics_screen():
     st.title("Interesting Statistics Page")
@@ -234,22 +217,23 @@ def interesting_statistics_screen():
         df['Time'] = pd.to_datetime(df['Time'], errors='coerce')
         df = df.dropna(subset=['Time'])
 
-        # 1. Activity Distribution by Description
-        st.write("**1. Activity Distribution by Description:**")
-        description_counts = df['Description'].value_counts().head(10)  # Top 10 activities
-        st.bar_chart(description_counts)
+        # New Graph: Activity Distribution by Category
+        st.write("**1. Activity Distribution by Category:**")
+        activity_categories = df['Description'].apply(categorize_activity)
+        category_counts = activity_categories.value_counts()
 
-        # 2. Document Interaction Patterns
-        st.write("**2. Document Interaction Patterns:**")
-        document_counts = df['Document'].value_counts()
-        st.bar_chart(document_counts)
+        fig, ax = plt.subplots()
+        category_counts.plot(kind='bar', ax=ax)
+        ax.set_title("Activity Distribution by Category")
+        ax.set_xlabel("Category")
+        ax.set_ylabel("Number of Activities")
+        st.pyplot(fig)
 
-        # 3. User Activity Heatmap
-        st.write("**3. User Activity Heatmap:**")
+        # 2. User Activity Heatmap
+        st.write("**2. User Activity Heatmap:**")
         df['DayOfWeek'] = df['Time'].dt.day_name()
         df['Hour'] = df['Time'].dt.hour
-        heatmap_data = df.pivot_table(index='DayOfWeek', columns='Hour', values='Description', aggfunc='count').fillna(
-            0)
+        heatmap_data = df.pivot_table(index='DayOfWeek', columns='Hour', values='Description', aggfunc='count').fillna(0)
 
         plt.figure(figsize=(10, 8))
         sns.heatmap(heatmap_data, cmap='YlGnBu', annot=True, fmt='.0f')
@@ -263,27 +247,179 @@ def interesting_statistics_screen():
         st.image(buffer, caption='User Activity Heatmap')
         plt.close()
 
-        # 4. Top Documents and Users
-        st.write("**4. Top Documents and Users:**")
-        top_documents = df['Document'].value_counts().head(10)
-        top_users = df['User'].value_counts().head(10)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**Top Documents:**")
-            st.bar_chart(top_documents)
-        with col2:
-            st.write("**Top Users:**")
-            st.bar_chart(top_users)
     else:
         st.warning("No filtered data available. Please apply filters on the Parameter Selection screen.")
 
+    # Graph: Users with the Most Actions
+    st.write("**3. Users with the Most Actions:**")
+    top_users_actions = df['User'].value_counts().head(10)
 
-# Main function to define the screen routing
+    fig, ax = plt.subplots()
+    top_users_actions.plot(kind='barh', ax=ax)
+    ax.set_title("Top Users by Number of Actions")
+    ax.set_xlabel("Number of Actions")
+    ax.set_ylabel("User")
+    st.pyplot(fig)
+
+    # Graph: Actions Per Day
+    st.write("**Number of Actions Per Day:**")
+    actions_per_day = df.groupby(df['Time'].dt.date)['Description'].count()
+
+    fig, ax = plt.subplots()
+    actions_per_day.plot(kind='line', ax=ax)
+    ax.set_title("Number of Actions Per Day")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Number of Actions")
+
+    # Rotate x-axis labels to avoid overlap
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    st.pyplot(fig)
+
+    # Graph: Activity Type Distribution Over Time
+    st.write("**Activity Type Distribution Over Time:**")
+    df['ActivityType'] = df['Description'].apply(categorize_activity)
+    activity_type_over_time = df.groupby([df['Time'].dt.date, 'ActivityType']).size().unstack(fill_value=0)
+
+    fig, ax = plt.subplots()
+    activity_type_over_time.plot(kind='area', stacked=True, ax=ax)
+    ax.set_title("Activity Type Distribution Over Time")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Number of Actions")
+
+    # Rotate x-axis labels to avoid overlap
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    st.pyplot(fig)
+
+    # Graph: Top Tabs Used
+    st.write("**6. Top Tabs Used:**")
+    top_tabs = df['Tab'].value_counts().head(10)
+
+    fig, ax = plt.subplots()
+    top_tabs.plot(kind='bar', ax=ax)
+    ax.set_title("Top Tabs Used")
+    ax.set_xlabel("Tab")
+    ax.set_ylabel("Number of Times Accessed")
+    st.pyplot(fig)
+
+    # Graph: Heatmap of Actions by Hour and Day
+    st.write("**7. Heatmap of Actions by Hour of Day and Day of Week:**")
+    df['DayOfWeek'] = df['Time'].dt.day_name()
+    df['Hour'] = df['Time'].dt.hour
+    actions_heatmap_data = df.pivot_table(index='DayOfWeek', columns='Hour', values='Description', aggfunc='count').fillna(0)
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(actions_heatmap_data, cmap='coolwarm', annot=True, fmt='.0f')
+    plt.title('Heatmap of Actions by Hour of Day and Day of Week')
+    plt.xlabel('Hour of Day')
+    plt.ylabel('Day of Week')
+
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    st.image(buffer, caption='Heatmap of Actions by Hour of Day and Day of Week')
+    plt.close()
+
+
+
+def customizable_dashboard():
+    # Check if JSON data is available
+    if 'json_data' not in st.session_state or st.session_state['json_data'] is None:
+        st.error("No file uploaded. Please upload a JSON file on the Admin page.")
+        return
+
+    st.sidebar.title("Dashboard Customization")
+
+    # Convert list to DataFrame if necessary
+    data = pd.DataFrame(st.session_state['json_data'])
+
+    # Ensure that the Time column is parsed as datetime
+    data['Time'] = pd.to_datetime(data['Time'], errors='coerce')
+
+    # Determine the minimum and maximum dates available in the data
+    min_date = data['Time'].min().date() if not data['Time'].isna().all() else date(2000, 1, 1)
+    max_date = data['Time'].max().date() if not data['Time'].isna().all() else date.today()
+
+    # Allow users to select any date range
+    selected_dates = st.sidebar.date_input("Select Date Range", [min_date, max_date])
+
+    # Ensure the selected date range is valid
+    if len(selected_dates) == 2:
+        start_date, end_date = selected_dates
+        if start_date > end_date:
+            st.error("End date must be greater than or equal to the start date.")
+            return
+    else:
+        st.error("Please select both a start date and an end date.")
+        return
+
+    # Button to apply the date range
+    if st.sidebar.button("Apply Date Range"):
+        # Store the filtered data in session state
+        st.session_state['filtered_data'] = data[(data['Time'] >= pd.to_datetime(start_date)) & (data['Time'] <= pd.to_datetime(end_date))]
+
+    # Check if the filtered data exists in session state
+    if 'filtered_data' in st.session_state:
+        filtered_data = st.session_state['filtered_data']
+
+        # Notify the user if no data is available for the selected date range
+        if filtered_data.empty:
+            st.warning("No data available for the selected date range.")
+            return
+
+        # Widgets to customize dashboard layout
+        show_activity_category = st.sidebar.checkbox("Show Activity Distribution by Category", True)
+        show_user_activity_heatmap = st.sidebar.checkbox("Show User Activity Heatmap", True)
+        show_top_users = st.sidebar.checkbox("Show Users with the Most Actions", True)
+        show_actions_per_day = st.sidebar.checkbox("Show Number of Actions Per Day", True)
+        show_activity_over_time = st.sidebar.checkbox("Show Activity Type Distribution Over Time", True)
+        show_top_tabs = st.sidebar.checkbox("Show Top Tabs Used", True)
+
+        # Displaying selected charts based on user choice
+        if show_activity_category:
+            filtered_data['ActivityType'] = filtered_data['Description'].apply(categorize_activity)
+            category_counts = filtered_data['ActivityType'].value_counts()
+            st.bar_chart(category_counts)
+
+        if show_user_activity_heatmap:
+            filtered_data['DayOfWeek'] = filtered_data['Time'].dt.day_name()
+            filtered_data['Hour'] = filtered_data['Time'].dt.hour
+            heatmap_data = filtered_data.pivot_table(index='DayOfWeek', columns='Hour', values='Description', aggfunc='count').fillna(0)
+
+            if heatmap_data.empty:
+                st.warning("No data available to generate the heatmap.")
+            else:
+                plt.figure(figsize=(10, 8))
+                sns.heatmap(heatmap_data, cmap='YlGnBu', annot=True, fmt='.0f')
+                plt.title('User Activity Heatmap by Day and Hour')
+                plt.xlabel('Hour of Day')
+                plt.ylabel('Day of Week')
+                st.pyplot(plt)
+
+        if show_top_users:
+            top_users_actions = filtered_data['User'].value_counts().head(10)
+            st.bar_chart(top_users_actions)
+
+        if show_actions_per_day:
+            actions_per_day = filtered_data.groupby(filtered_data['Time'].dt.date)['Description'].count()
+            st.line_chart(actions_per_day)
+
+        if show_activity_over_time:
+            activity_type_over_time = filtered_data.groupby([filtered_data['Time'].dt.date, 'ActivityType']).size().unstack(fill_value=0)
+            st.area_chart(activity_type_over_time)
+
+        if show_top_tabs:
+            top_tabs = filtered_data['Tab'].value_counts().head(10)
+            st.bar_chart(top_tabs)
+
+
+# Main functio n to define screen routing
 def main():
     st.sidebar.title("Navigation")
-    screen = st.sidebar.radio("Go to", ["Admin", "Chatbot", "Parameter Selection", "Parameters Results",
-                                        "Interesting Statistics"], index=0)
+    screen = st.sidebar.radio("Go to", ["Admin", "Chatbot", "Parameter Selection", "Parameters Results", "Interesting Statistics", "Customizable Dashboard"], index=0)
 
     if screen == "Admin":
         admin_screen()
@@ -333,7 +469,9 @@ def main():
         parameters_results_screen()
     elif screen == "Interesting Statistics":
         interesting_statistics_screen()
-
+    elif screen == "Customizable Dashboard":
+        customizable_dashboard()
 
 if __name__ == "__main__":
     main()
+
